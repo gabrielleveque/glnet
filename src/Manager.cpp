@@ -4,73 +4,73 @@
 
 #include <type_traits>
 
-glnet::Manager::Manager() : _running(true)
+glnet::Manager::Manager() : running_(true)
 {
     Socket::startup();
 }
 
 glnet::Manager::~Manager()
 {
-    _running = false;
-    if (_tcp) {
-        _tcp->stop();
+    running_ = false;
+    if (tcp_) {
+        tcp_->stop();
     }
-    utils::Threads::join(_tcpThread);
-    if (_udp) {
-        _udp->stop();
+    utils::Threads::join(tcpThread_);
+    if (udp_) {
+        udp_->stop();
     }
-    utils::Threads::join(_udpThread);
-    utils::Threads::join(_mainThread);
+    utils::Threads::join(udpThread_);
+    utils::Threads::join(mainThread_);
     Socket::cleanup();
 }
 
 void glnet::Manager::initialize(connection::Side side)
 {
     if (side == connection::Side::CLIENT) {
-        _client.clientPort = getAvailablePort();
+        client_.clientPort = getAvailablePort();
     }
-    _side = side;
-    _mainThread = std::thread(&Manager::run, this);
+    side_ = side;
+    mainThread_ = std::thread(&Manager::run, this);
 }
 
 void glnet::Manager::stop()
 {
-    _running = false;
+    running_ = false;
 }
 
 void glnet::Manager::run()
 {
-    while (_running) {
-        while (!_disconnectionQueue.empty()) {
-            if (_side == connection::Side::SERVER) {
-                std::uint32_t id = _disconnectionQueue.front();
+    while (running_) {
+        while (!disconnectionQueue_.empty()) {
+            if (side_ == connection::Side::SERVER) {
+                std::uint32_t id = disconnectionQueue_.front();
 
-                if (_server.clients.find(id) == _server.clients.end()) {
+                if (server_.clients.find(id) == server_.clients.end()) {
                     return;
                 }
-                _callbacks.onDisconnection(id);
-                _server.clients.erase(id);
+                callbacks_.onDisconnection(id);
+                server_.clients.erase(id);
             }
-            _disconnectionQueue.pop();
+            disconnectionQueue_.pop();
         }
     }
 }
 
 void glnet::Manager::createConnection(connection::Type type, Endpoint endpoint)
 {
-    if (_side == connection::Side::CLIENT) {
-        endpoint.port = _client.clientPort;
+    if (side_ == connection::Side::CLIENT) {
+        endpoint.port = client_.clientPort;
     }
     switch (type) {
         case connection::Type::TCP:
-            _tcp = std::make_shared<Tcp>(endpoint, _side);
-            if (_side == connection::Side::SERVER) {
-                _tcpThread = std::thread(&Tcp::run, _tcp);
+            tcp_ = std::make_shared<Tcp>(endpoint, side_);
+            if (side_ == connection::Side::SERVER) {
+                tcpThread_ = std::thread(&Tcp::run, tcp_);
             }
             break;
         case connection::Type::UDP:
-            _udp = std::make_shared<Udp>(endpoint, _side);
-            _udpThread = std::thread(&Udp::run, _udp);
+            udp_ = std::make_shared<Udp>(endpoint, side_);
+            udpThread_ = std::thread(&Udp::run, udp_);
             break;
         default:
             break;
@@ -79,23 +79,23 @@ void glnet::Manager::createConnection(connection::Type type, Endpoint endpoint)
 
 void glnet::Manager::connectToServer()
 {
-    if (_side == connection::Side::CLIENT && _tcp) {
-        _tcp->connectToServer(_client.server.address, _client.server.port);
-        _tcpThread = std::thread(&Tcp::run, _tcp);
+    if (side_ == connection::Side::CLIENT && tcp_) {
+        tcp_->connectToServer(client_.server.address, client_.server.port);
+        tcpThread_ = std::thread(&Tcp::run, tcp_);
     }
 }
 
 void glnet::Manager::sendMessage(connection::Type type, Buffer msg)
 {
-    if (_side != connection::Side::CLIENT) {
+    if (side_ != connection::Side::CLIENT) {
         return;
     }
     switch (type) {
         case connection::Type::TCP:
-            _tcp->sendToSocket(*_client.socket, msg);
+            tcp_->sendToSocket(*client_.socket, msg);
             break;
         case connection::Type::UDP:
-            _udp->sendToEndpoint(_client.server, msg);
+            udp_->sendToEndpoint(client_.server, msg);
             break;
         default:
             break;
@@ -104,22 +104,22 @@ void glnet::Manager::sendMessage(connection::Type type, Buffer msg)
 
 void glnet::Manager::sendMessageTo(connection::Type type, std::vector<std::uint32_t> ids, Buffer msg)
 {
-    if (_side != connection::Side::SERVER || ids.empty()) {
+    if (side_ != connection::Side::SERVER || ids.empty()) {
         return;
     }
     for (std::uint32_t id : ids) {
-        if (_server.clients.find(id) == _server.clients.end()) {
+        if (server_.clients.find(id) == server_.clients.end()) {
             return;
         }
         switch (type) {
             case connection::Type::TCP:
-                _tcp->sendToSocket(*_server.clients[id], msg);
+                tcp_->sendToSocket(*server_.clients[id], msg);
                 break;
             case connection::Type::UDP:
-                if (!_server.clients[id]) {
+                if (!server_.clients[id]) {
                     return;
                 }
-                _udp->sendToEndpoint(_server.clients[id]->getEndpoint(), msg);
+                udp_->sendToEndpoint(server_.clients[id]->getEndpoint(), msg);
                 break;
             default:
                 break;
@@ -132,13 +132,13 @@ void glnet::Manager::callbackHandler(Callback::Type callback, Socket& socket)
     if (callback == Callback::Type::ON_CONNECTION) {
         std::shared_ptr<Socket> connectionSocket = std::make_shared<Socket>(socket);
 
-        if (_side == connection::Side::CLIENT) {
-            _client.socket = connectionSocket;
-            _callbacks.onConnection(0);
-        } else if (_side == connection::Side::SERVER) {
-            _server.clients[_server.nextClientId] = connectionSocket;
-            _callbacks.onConnection(_server.nextClientId);
-            _server.nextClientId++;
+        if (side_ == connection::Side::CLIENT) {
+            client_.socket = connectionSocket;
+            callbacks_.onConnection(0);
+        } else if (side_ == connection::Side::SERVER) {
+            server_.clients[server_.nextClientId] = connectionSocket;
+            callbacks_.onConnection(server_.nextClientId);
+            server_.nextClientId++;
         }
     }
 }
@@ -146,28 +146,28 @@ void glnet::Manager::callbackHandler(Callback::Type callback, Socket& socket)
 void glnet::Manager::callbackHandler(Callback::Type callback, std::uint32_t id)
 {
     if (callback == Callback::Type::ON_DISCONNECTION) {
-        _disconnectionQueue.push(id);
+        disconnectionQueue_.push(id);
     }
 }
 
 void glnet::Manager::callbackHandler(Callback::Type callback, connection::Type type, std::uint32_t id, Message& message)
 {
     if (callback == Callback::Type::ON_MESSAGE_RECEPTION) {
-        if (_side != connection::Side::CLIENT && _server.clients.find(id) == _server.clients.end()) {
+        if (side_ != connection::Side::CLIENT && server_.clients.find(id) == server_.clients.end()) {
             return;
         }
-        _callbacks.onMessageReception(type, id, message);
+        callbacks_.onMessageReception(type, id, message);
     }
 }
 
 template <typename T>
 glnet::Socket& glnet::Manager::getClientSocketBy(T& ref)
 {
-    if (_side == connection::Side::CLIENT) {
+    if (side_ == connection::Side::CLIENT) {
         throw std::runtime_error("Client side has no clients");
     }
     if (std::is_same_v<T, Socket::Fd>) {
-        for (auto& [id, client] : _server.clients) {
+        for (auto& [id, client] : server_.clients) {
             if (client && client->getFd() == ref) {
                 return *client;
             }
@@ -181,17 +181,17 @@ template glnet::Socket& glnet::Manager::getClientSocketBy<glnet::Socket::Fd>(gln
 template <typename T>
 std::uint32_t glnet::Manager::getClientIdBy(T& ref)
 {
-    if (_side == connection::Side::CLIENT) {
+    if (side_ == connection::Side::CLIENT) {
         return 0;
     }
     if constexpr (std::is_same_v<T, Socket>) {
-        for (auto& [id, client] : _server.clients) {
+        for (auto& [id, client] : server_.clients) {
             if (client && client->getFd() == ref.getFd()) {
                 return id;
             }
         }
     } else if constexpr (std::is_same_v<T, Endpoint>) {
-        for (auto& [id, client] : _server.clients) {
+        for (auto& [id, client] : server_.clients) {
             if (client && client->getEndpoint() == ref) {
                 return id;
             }
@@ -205,7 +205,7 @@ template std::uint32_t glnet::Manager::getClientIdBy<glnet::Endpoint>(glnet::End
 
 void glnet::Manager::setServerEndpoint(Endpoint endpoint)
 {
-    _client.server = endpoint;
+    client_.server = endpoint;
 }
 
 std::uint16_t glnet::Manager::getAvailablePort()
@@ -226,5 +226,5 @@ std::uint16_t glnet::Manager::getAvailablePort()
 
 glnet::Callback& glnet::Manager::callbacks()
 {
-    return _callbacks;
+    return callbacks_;
 }

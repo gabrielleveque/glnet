@@ -66,8 +66,8 @@ namespace glnet
             void setOnMessageReception(std::function<void(connection::Type, std::uint32_t, Message&)> func);
 
         private:
-            std::function<void(std::uint32_t)> _onConnection;                                   /*!> The function to call when a clients connect (to be defined by the user) */
-            std::function<void(std::uint32_t)> _onDisconnection;                                /*!> The function to call when a clients disconnect (to be defined by the user) */
-            std::function<void(connection::Type, std::uint32_t, Message&)> _onMessageReception; /*!> The function to call when a message is received (to be defined by the user) */
+            std::function<void(std::uint32_t)> onConnection_;                                   /*!> The function to call when a clients connect (to be defined by the user) */
+            std::function<void(std::uint32_t)> onDisconnection_;                                /*!> The function to call when a clients disconnect (to be defined by the user) */
+            std::function<void(connection::Type, std::uint32_t, Message&)> onMessageReception_; /*!> The function to call when a message is received (to be defined by the user) */
     };
 }

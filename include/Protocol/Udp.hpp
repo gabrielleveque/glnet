@@ -60,10 +60,10 @@ namespace glnet
              */
             std::size_t readDatagram(Socket::Address& addr, Socket::AddressLength& len, Datagram& datagram);
 
-            connection::Side _side; /*!> The side of the connection (client or server) */
-            bool _running;                /*!> If the tcp instance should run */
+            connection::Side side_; /*!> The side of the connection (client or server) */
+            bool running_;                /*!> If the tcp instance should run */
 
-            Socket _socket;                       /*!> The udp socket */
-            std::vector<Socket::PollFd> _pollFds; /*!> The pollfd array for the tcp instance */
+            Socket socket_;                       /*!> The udp socket */
+            std::vector<Socket::PollFd> pollFds_; /*!> The pollfd array for the tcp instance */
     };
 }

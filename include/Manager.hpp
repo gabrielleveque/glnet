@@ -167,20 +167,20 @@ namespace glnet
 
             friend class Singleton<Manager>; /*!> Friend class to allow access to the private constructor and destructor */
 
-            bool _running;                /*!> If the Manager is running */
-            std::thread _mainThread;      /*!> The main thread of the Manager */
-            connection::Side _side; /*!> The side of the connection (client or server) */
+            bool running_;                /*!> If the Manager is running */
+            std::thread mainThread_;      /*!> The main thread of the Manager */
+            connection::Side side_; /*!> The side of the connection (client or server) */
 
-            Server _server; /*!> The server information (only for server side) */
-            Client _client; /*!> The client information (only for client side) */
+            Server server_; /*!> The server information (only for server side) */
+            Client client_; /*!> The client information (only for client side) */
 
-            std::shared_ptr<Tcp> _tcp; /*!> The tcp instance */
-            std::thread _tcpThread;              /*!> The tcp thread */
-            std::shared_ptr<Udp> _udp; /*!> The udp instance */
-            std::thread _udpThread;              /*!> The udp thread */
+            std::shared_ptr<Tcp> tcp_; /*!> The tcp instance */
+            std::thread tcpThread_;              /*!> The tcp thread */
+            std::shared_ptr<Udp> udp_; /*!> The udp instance */
+            std::thread udpThread_;              /*!> The udp thread */
 
-            Callback _callbacks; /*!> The callback handler */
+            Callback callbacks_; /*!> The callback handler */
 
-            std::queue<std::uint16_t> _disconnectionQueue; /*!> The queue of disconnections to process */
+            std::queue<std::uint16_t> disconnectionQueue_; /*!> The queue of disconnections to process */
     };
 }

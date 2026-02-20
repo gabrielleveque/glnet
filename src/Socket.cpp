@@ -10,19 +10,19 @@
 #include <cstring>
 #include <format>
 
-glnet::Socket::Socket(connection::Type type, Endpoint endpoint) : _endpoint(endpoint), _isOwner(true)
+glnet::Socket::Socket(connection::Type type, Endpoint endpoint) : endpoint_(endpoint), isOwner_(true)
 {
     if (type == connection::Type::TCP) {
-        _fd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        fd_ = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     } else if (type == connection::Type::UDP) {
-        _fd = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        fd_ = ::socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     }
-    if (_fd == INVALID_FD) {
+    if (fd_ == INVALID_FD) {
         throw std::runtime_error(std::format("Couldn't create the socket: {}.", getLastError()));
     }
 }
 
-glnet::Socket::Socket(Fd fd, bool isOwner) : _fd(fd), _isOwner(isOwner)
+glnet::Socket::Socket(Fd fd, bool isOwner) : fd_(fd), isOwner_(isOwner)
 {
     if (fd == INVALID_FD) {
         throw std::runtime_error(std::format("Invalid file descriptor provided."));
@@ -32,14 +32,14 @@ glnet::Socket::Socket(Fd fd, bool isOwner) : _fd(fd), _isOwner(isOwner)
 
 glnet::Socket::~Socket()
 {
-    if (!_isOwner) {
+    if (!isOwner_) {
         return;
     }
-    if (_fd != INVALID_FD) {
+    if (fd_ != INVALID_FD) {
 #ifdef _WIN32
-        closesocket(_fd);
+        closesocket(fd_);
 #else
-        ::close(_fd);
+        ::close(fd_);
 #endif
     }
 }
@@ -64,14 +64,14 @@ void glnet::Socket::cleanup()
 
 void glnet::Socket::bind(const Address& addr, AddressLength addrLen)
 {
-    if (::bind(_fd, &addr, addrLen) == SOCKET_ERROR_CODE) {
+    if (::bind(fd_, &addr, addrLen) == SOCKET_ERROR_CODE) {
         throw std::runtime_error(std::format("Couldn't bind the socket: {}.", getLastError()));
     }
 }
 
 void glnet::Socket::listen(std::int32_t backlog)
 {
-    if (::listen(_fd, backlog) == SOCKET_ERROR_CODE) {
+    if (::listen(fd_, backlog) == SOCKET_ERROR_CODE) {
         throw std::runtime_error(std::format("Couldn't listen on the socket: {}.", getLastError()));
     }
 }
@@ -82,11 +82,11 @@ void glnet::Socket::reuse(bool enable)
 
 #ifdef _WIN32
     if (!enable) {
-        if (::setsockopt(_fd, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, (char *) &opt, sizeof(opt)) == SOCKET_ERROR_CODE) {
+        if (::setsockopt(fd_, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, (char *) &opt, sizeof(opt)) == SOCKET_ERROR_CODE) {
             throw std::runtime_error(std::format("Couldn't set the exclusive address use option on the socket: {}.", getLastError()));
         }
     } else {
-        if (::setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, (char *) &opt, sizeof(opt)) == SOCKET_ERROR_CODE) {
+        if (::setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, (char *) &opt, sizeof(opt)) == SOCKET_ERROR_CODE) {
             throw std::runtime_error(std::format("Couldn't set the reuse address option on the socket: {}.", getLastError()));
         }
     }
@@ -94,7 +94,7 @@ void glnet::Socket::reuse(bool enable)
     if (!enable) {
         return;
     }
-    if (::setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == SOCKET_ERROR_CODE || ::setsockopt(_fd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt)) == SOCKET_ERROR_CODE) {
+    if (::setsockopt(fd_, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == SOCKET_ERROR_CODE || ::setsockopt(fd_, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt)) == SOCKET_ERROR_CODE) {
         throw std::runtime_error(std::format("Couldn't set the reuse options on the socket: {}.", getLastError()));
     }
 #endif
@@ -106,7 +106,7 @@ glnet::Socket glnet::Socket::accept(OptionalReference<Address> addr, OptionalRef
     AddressLength *addrLenPtr = addrLen.has_value() ? &addrLen.value().get() : nullptr;
     Fd clientFd = 0;
 
-    clientFd = ::accept(_fd, addrPtr, addrLenPtr);
+    clientFd = ::accept(fd_, addrPtr, addrLenPtr);
     if (clientFd == INVALID_FD) {
         throw std::runtime_error(std::format("Couldn't accept the connection: {}.", getLastError()));
     }
@@ -115,7 +115,7 @@ glnet::Socket glnet::Socket::accept(OptionalReference<Address> addr, OptionalRef
 
 void glnet::Socket::connect(const Address& addr, AddressLength addrLen)
 {
-    if (::connect(_fd, &addr, addrLen) == SOCKET_ERROR_CODE) {
+    if (::connect(fd_, &addr, addrLen) == SOCKET_ERROR_CODE) {
         throw std::runtime_error(std::format("Couldn't connect to the address: {}.", getLastError()));
     }
 }
@@ -139,7 +139,7 @@ glnet::Socket::BytesSent glnet::Socket::send(const Buffer& buffer, BufferLength 
 {
     BytesSent bytesSent = 0;
 
-    bytesSent = ::send(_fd, (const char *) buffer.data(), length, flags);
+    bytesSent = ::send(fd_, (const char *) buffer.data(), length, flags);
     if (bytesSent == SOCKET_ERROR_CODE) {
         throw std::runtime_error(std::format("Send error on the socket: {}.", getLastError()));
     }
@@ -150,7 +150,7 @@ glnet::Socket::BytesReceived glnet::Socket::recv(Buffer& buffer, BufferLength le
 {
     BytesReceived bytesReceived = 0;
 
-    bytesReceived = ::recv(_fd, (char *) buffer.data(), length, flags);
+    bytesReceived = ::recv(fd_, (char *) buffer.data(), length, flags);
     if (bytesReceived == SOCKET_ERROR_CODE) {
         throw std::runtime_error(std::format("Receive error on the socket: {}.", getLastError()));
     }
@@ -161,7 +161,7 @@ glnet::Socket::BytesReceived glnet::Socket::sendTo(const Buffer& buffer, BufferL
 {
     BytesSent bytesSent = 0;
 
-    bytesSent = ::sendto(_fd, (const char *) buffer.data(), length, flags, &destAddr, destAddrLen);
+    bytesSent = ::sendto(fd_, (const char *) buffer.data(), length, flags, &destAddr, destAddrLen);
     if (bytesSent == SOCKET_ERROR_CODE) {
         throw std::runtime_error(std::format("Send error to an endpoint: {}.", getLastError()));
     }
@@ -175,7 +175,7 @@ glnet::Socket::BytesReceived glnet::Socket::recvFrom(
     AddressLength *addrLenPtr = srcAddrLen.has_value() ? &srcAddrLen->get() : nullptr;
     BytesReceived bytesReceived = 0;
 
-    bytesReceived = ::recvfrom(_fd, (char *) buffer.data(), length, flags, addrPtr, addrLenPtr);
+    bytesReceived = ::recvfrom(fd_, (char *) buffer.data(), length, flags, addrPtr, addrLenPtr);
     if (bytesReceived == SOCKET_ERROR_CODE) {
 
         throw std::runtime_error(std::format("Receive error from an endpoint: {}.", getLastError()));
@@ -185,7 +185,7 @@ glnet::Socket::BytesReceived glnet::Socket::recvFrom(
 
 std::int32_t glnet::Socket::getSockName(Address& addr, AddressLength& addrLen)
 {
-    if (::getsockname(_fd, &addr, &addrLen) < SOCKET_ERROR_CODE) {
+    if (::getsockname(fd_, &addr, &addrLen) < SOCKET_ERROR_CODE) {
         throw std::runtime_error(std::format("Error getting socket name: {}.", getLastError()));
     }
     return 0;
@@ -193,17 +193,17 @@ std::int32_t glnet::Socket::getSockName(Address& addr, AddressLength& addrLen)
 
 glnet::Socket::Fd glnet::Socket::getFd() const
 {
-    return _fd;
+    return fd_;
 }
 
 glnet::Endpoint glnet::Socket::getEndpoint() const
 {
-    return _endpoint;
+    return endpoint_;
 }
 
 void glnet::Socket::setEndpoint(Endpoint endpoint)
 {
-    _endpoint = endpoint;
+    endpoint_ = endpoint;
 }
 
 std::string glnet::Socket::getLastError()

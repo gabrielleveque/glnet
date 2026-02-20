@@ -5,7 +5,7 @@
 
 #include <iostream>
 
-glnet::Udp::Udp(Endpoint endpoint, connection::Side side) : _side(side), _running(true), _socket(connection::Type::UDP, endpoint)
+glnet::Udp::Udp(Endpoint endpoint, connection::Side side) : side_(side), running_(true), socket_(connection::Type::UDP, endpoint)
 {
     Socket::Address_in addr = {0};
 
@@ -13,25 +13,25 @@ glnet::Udp::Udp(Endpoint endpoint, connection::Side side) : _side(side), _runnin
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     addr.sin_port = htons(endpoint.port);
     if (endpoint != Endpoint{"", 0}) {
-        _socket.reuse();
-        _socket.bind((Socket::Address&) addr, sizeof(addr));
+        socket_.reuse();
+        socket_.bind((Socket::Address&) addr, sizeof(addr));
     }
-    _pollFds.push_back({.fd = _socket.getFd(), .events = POLLIN, .revents = 0});
+    pollFds_.push_back({.fd = socket_.getFd(), .events = POLLIN, .revents = 0});
 }
 
 void glnet::Udp::stop()
 {
-    _running = false;
+    running_ = false;
 }
 
 void glnet::Udp::run()
 {
     try {
-        while (_running) {
-            std::int32_t result = _socket.poll(_pollFds, _pollFds.size(), 0);
+        while (running_) {
+            std::int32_t result = socket_.poll(pollFds_, pollFds_.size(), 0);
 
-            if (result > 0 && _pollFds.size() >= 1) {
-                if (_pollFds[0].revents & POLLIN) {
+            if (result > 0 && pollFds_.size() >= 1) {
+                if (pollFds_[0].revents & POLLIN) {
                     readFromSocket();
                 }
             }
@@ -44,7 +44,7 @@ void glnet::Udp::run()
 std::size_t glnet::Udp::readDatagram(Socket::Address& addr, Socket::AddressLength& len, Datagram& datagram)
 {
     std::vector<std::uint8_t> buffer(1024);
-    std::size_t bytesRead = _socket.recvFrom(buffer, buffer.size(), 0, addr, len);
+    std::size_t bytesRead = socket_.recvFrom(buffer, buffer.size(), 0, addr, len);
 
     if (bytesRead < 5) {
         return 0;
@@ -83,7 +83,7 @@ void glnet::Udp::sendToEndpoint(Endpoint endpoint, Buffer& msg)
         servAddr.sin_family = AF_INET;
         servAddr.sin_port = htons(endpoint.port);
         servAddr.sin_addr.s_addr = inet_addr(endpoint.address.c_str());
-        _socket.sendTo(msg.data, msg.data.size(), 0, (const Socket::Address&) servAddr, sizeof(servAddr));
+        socket_.sendTo(msg.data, msg.data.size(), 0, (const Socket::Address&) servAddr, sizeof(servAddr));
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
     }

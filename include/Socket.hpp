@@ -322,9 +322,9 @@ namespace glnet
              */
             static std::string getLastError();
 
-            Fd _fd;                   /*!> The file descriptor of the socket */
-            Endpoint _endpoint; /*!> The endpoint of the socket */
+            Fd fd_;             /*!> The file descriptor of the socket */
+            Endpoint endpoint_; /*!> The endpoint of the socket */
 
-            bool _isOwner; /*!> Whether the socket owns the file descriptor (for cleanup purposes) */
+            bool isOwner_; /*!> Whether the socket owns the file descriptor (for cleanup purposes) */
     };
 }

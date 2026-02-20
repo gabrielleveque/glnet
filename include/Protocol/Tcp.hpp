@@ -50,11 +50,11 @@ namespace glnet
             void sendToSocket(Socket& socket, Buffer& msg);
 
         private:
-            connection::Side _side; /*!> The side of the connection (client or server) */
-            bool _running;                /*!> If the tcp instance should run */
+            connection::Side side_; /*!> The side of the connection (client or server) */
+            bool running_;          /*!> If the tcp instance should run */
 
-            Socket _socket;                       /*!> The tcp instance socket */
-            std::vector<Socket::PollFd> _pollFds; /*!> The pollfd array for the tcp instance */
+            Socket socket_;                       /*!> The tcp instance socket */
+            std::vector<Socket::PollFd> pollFds_; /*!> The pollfd array for the tcp instance */
 
             /**
              * @brief Accept a socket on the tcp instance
