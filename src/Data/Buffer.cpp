@@ -1,4 +1,3 @@
-
 #include "Utils/Converter.hpp"
 #include "Data/Buffer.hpp"
 
@@ -21,8 +20,6 @@ glnet::Buffer::Buffer(std::vector<std::uint8_t> data_) : data(data_)
 glnet::Buffer::Buffer(std::initializer_list<std::uint8_t> data_) : data(std::vector<std::uint8_t>(data_))
 {
 }
-
-#include <iostream>
 
 void glnet::Buffer::constructData(std::string data_)
 {

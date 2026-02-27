@@ -85,24 +85,24 @@ void glnet::Manager::connectToServer()
     }
 }
 
-void glnet::Manager::sendMessage(connection::Type type, Buffer msg)
+void glnet::Manager::sendToServer(connection::Type type, Packet& packet)
 {
     if (side_ != connection::Side::CLIENT) {
         return;
     }
     switch (type) {
         case connection::Type::TCP:
-            tcp_->sendToSocket(*client_.socket, msg);
+            tcp_->sendToSocket(*client_.socket, packet);
             break;
         case connection::Type::UDP:
-            udp_->sendToEndpoint(client_.server, msg);
+            udp_->sendToEndpoint(client_.server, packet);
             break;
         default:
             break;
     }
 }
 
-void glnet::Manager::sendMessageTo(connection::Type type, std::vector<std::uint32_t> ids, Buffer msg)
+void glnet::Manager::sendToClients(connection::Type type, std::vector<std::uint32_t> ids, Packet& packet)
 {
     if (side_ != connection::Side::SERVER || ids.empty()) {
         return;
@@ -113,19 +113,20 @@ void glnet::Manager::sendMessageTo(connection::Type type, std::vector<std::uint3
         }
         switch (type) {
             case connection::Type::TCP:
-                tcp_->sendToSocket(*server_.clients[id], msg);
+                tcp_->sendToSocket(*server_.clients[id], packet);
                 break;
             case connection::Type::UDP:
                 if (!server_.clients[id]) {
                     return;
                 }
-                udp_->sendToEndpoint(server_.clients[id]->getEndpoint(), msg);
+                udp_->sendToEndpoint(server_.clients[id]->getEndpoint(), packet);
                 break;
             default:
                 break;
         }
     }
 }
+
 
 void glnet::Manager::callbackHandler(Callback::Type callback, Socket& socket)
 {
@@ -150,13 +151,13 @@ void glnet::Manager::callbackHandler(Callback::Type callback, std::uint32_t id)
     }
 }
 
-void glnet::Manager::callbackHandler(Callback::Type callback, connection::Type type, std::uint32_t id, Message& message)
+void glnet::Manager::callbackHandler(Callback::Type callback, connection::Type type, std::uint32_t id, Packet& packet)
 {
     if (callback == Callback::Type::ON_MESSAGE_RECEPTION) {
         if (side_ != connection::Side::CLIENT && server_.clients.find(id) == server_.clients.end()) {
             return;
         }
-        callbacks_.onMessageReception(type, id, message);
+        callbacks_.onMessageReception(type, id, packet);
     }
 }
 
