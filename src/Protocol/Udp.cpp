@@ -41,17 +41,17 @@ void glnet::Udp::run()
     }
 }
 
-std::size_t glnet::Udp::readDatagram(Socket::Address& addr, Socket::AddressLength& len, Datagram& datagram)
+std::size_t glnet::Udp::readDatagram(Socket::Address& addr, Socket::AddressLength& len, Packet& packet)
 {
     std::vector<std::uint8_t> buffer(1024);
-    std::size_t bytesRead = socket_.recvFrom(buffer, buffer.size(), 0, addr, len);
+    std::size_t bytesRead = socket_.recvFrom(buffer.data(), buffer.size(), 0, addr, len);
 
+    std::cout << "Received datagram with length " << bytesRead << std::endl;
     if (bytesRead < 5) {
         return 0;
     }
-    datagram.opcode = buffer[0];
-    datagram.length = utils::Converter::bytesToNumber(std::vector(buffer.begin() + 1, buffer.end()), 4);
-    datagram.payload = std::vector(buffer.begin() + 5, buffer.begin() + 5 + datagram.length);
+    std::memcpy(&packet.length, buffer.data(), sizeof(packet.length));
+    packet.bytes = std::vector(buffer.begin() + sizeof(packet.length), buffer.begin() + sizeof(packet.length) + packet.length);
     return bytesRead;
 }
 
@@ -62,28 +62,35 @@ void glnet::Udp::readFromSocket()
         Socket::Address addr = {0};
         Socket::AddressLength len = sizeof(addr);
         Endpoint endpoint = {.address = "", .port = 0};
-        Datagram datagram = {0};
+        Packet packet;
 
-        if (readDatagram(addr, len, datagram) == 0) {
+        if (readDatagram(addr, len, packet) == 0) {
             return;
         }
         endpoint.address = ::inet_ntoa(((Socket::Address_in&) addr).sin_addr);
         endpoint.port = ntohs(((Socket::Address_in&) addr).sin_port);
-        manager.callbackHandler(Callback::Type::ON_MESSAGE_RECEPTION, connection::Type::UDP, manager.getClientIdBy<Endpoint>(endpoint), datagram);
+        manager.callbackHandler(Callback::Type::ON_MESSAGE_RECEPTION, connection::Type::UDP, manager.getClientIdBy<Endpoint>(endpoint), packet);
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
     }
 }
 
-void glnet::Udp::sendToEndpoint(Endpoint endpoint, Buffer& msg)
+void glnet::Udp::sendToEndpoint(Endpoint endpoint, Packet& packet)
 {
     try {
         Socket::Address_in servAddr = {0};
+        std::uint8_t buffer[sizeof(packet.length) + packet.length];
 
         servAddr.sin_family = AF_INET;
         servAddr.sin_port = htons(endpoint.port);
         servAddr.sin_addr.s_addr = inet_addr(endpoint.address.c_str());
-        socket_.sendTo(msg.data, msg.data.size(), 0, (const Socket::Address&) servAddr, sizeof(servAddr));
+
+        std::memcpy(buffer, &packet.length, sizeof(packet.length));
+        std::memcpy(buffer + sizeof(packet.length), packet.bytes.data(), packet.length);
+
+        std::cout << "Sending datagram with length " << sizeof(packet.length) + packet.length << std::endl;
+
+        socket_.sendTo(buffer, sizeof(packet.length) + packet.length, 0, (const Socket::Address&) servAddr, sizeof(servAddr));
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
     }

@@ -6,6 +6,7 @@
 #include "Protocol/Tcp.hpp"
 #include "Protocol/Udp.hpp"
 #include "Data/Buffer.hpp"
+#include "Data/Packet.hpp"
 #include "Callback.hpp"
 
 #include <unordered_map>
@@ -59,21 +60,21 @@ namespace glnet
             void connectToServer();
 
             /**
-             * @brief Send a message to the server
+             * @brief Send a packet to the server
              *
-             * @param type The type of the connection on which to send the message
-             * @param msg The message to send
+             * @param type The type of connection to use
+             * @param packet The packet to send
              */
-            void sendMessage(connection::Type type, Buffer msg);
+            void sendToServer(connection::Type type, Packet& packet);
 
             /**
-             * @brief Send a message to a client
+             * @brief Send a packet to the clients
              *
-             * @param type The type of the connection on which to send the message
-             * @param ids The ids of the clients to which to send the message
-             * @param msg The message to send
+             * @param type The type of connection to use
+             * @param ids The ids of the clients to send to
+             * @param packet The packet to send
              */
-            void sendMessageTo(connection::Type type, std::vector<std::uint32_t> ids, Buffer msg);
+            void sendToClients(connection::Type type, std::vector<std::uint32_t> ids, Packet& packet);
 
             /**
              * @brief Handler of the callbacks
@@ -99,7 +100,7 @@ namespace glnet
              * @param id The id of the client
              * @param message The received message
              */
-            void callbackHandler(Callback::Type callback, connection::Type type, std::uint32_t id, Message& message);
+            void callbackHandler(Callback::Type callback, connection::Type type, std::uint32_t id, Packet& packet);
 
             /**
              * @brief Get the Client Socket By object
@@ -143,7 +144,7 @@ namespace glnet
             struct Server {
                     std::unordered_map<std::uint32_t, std::shared_ptr<Socket>> clients; /*!> The map of the clients connected via the tcp socket */
                     std::uint32_t nextClientId;                                         /*!> The next id to give to a client */
-            };
+            } server_; /*!> The server information (only for server side) */
 
             /**
              * @struct Client
@@ -153,7 +154,7 @@ namespace glnet
                     Endpoint server;          /*!> The endpoint of the server */
                     std::shared_ptr<Socket> socket; /*!> The client connection information */
                     std::uint32_t clientPort;       /*!> The port of the client */
-            };
+            } client_;  /*!> The client information (only for client side) */
 
             /**
              * @brief The main loop of the Manager
@@ -170,9 +171,6 @@ namespace glnet
             bool running_;                /*!> If the Manager is running */
             std::thread mainThread_;      /*!> The main thread of the Manager */
             connection::Side side_; /*!> The side of the connection (client or server) */
-
-            Server server_; /*!> The server information (only for server side) */
-            Client client_; /*!> The client information (only for client side) */
 
             std::shared_ptr<Tcp> tcp_; /*!> The tcp instance */
             std::thread tcpThread_;              /*!> The tcp thread */

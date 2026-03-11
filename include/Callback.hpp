@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include "Data/Message.hpp"
 #include "Enum/Connection.hpp"
+#include "Data/Packet.hpp"
 
 #include <functional>
 
@@ -54,20 +54,20 @@ namespace glnet
              *
              * @param type The type of the connection
              * @param clientId The id of the client
-             * @param message The received message
+             * @param packet The received packet
              */
-            void onMessageReception(connection::Type type, std::uint32_t clientId, Message& message);
+            void onMessageReception(connection::Type type, std::uint32_t clientId, Packet& packet);
 
             /**
              * @brief Set the callback for a message reception
              *
              * @param func The function to set
              */
-            void setOnMessageReception(std::function<void(connection::Type, std::uint32_t, Message&)> func);
+            void setOnMessageReception(std::function<void(connection::Type, std::uint32_t, Packet&)> func);
 
         private:
-            std::function<void(std::uint32_t)> onConnection_;                                   /*!> The function to call when a clients connect (to be defined by the user) */
-            std::function<void(std::uint32_t)> onDisconnection_;                                /*!> The function to call when a clients disconnect (to be defined by the user) */
-            std::function<void(connection::Type, std::uint32_t, Message&)> onMessageReception_; /*!> The function to call when a message is received (to be defined by the user) */
+            std::function<void(std::uint32_t)> onConnection_;                                  /*!> The function to call when a clients connect (to be defined by the user) */
+            std::function<void(std::uint32_t)> onDisconnection_;                               /*!> The function to call when a clients disconnect (to be defined by the user) */
+            std::function<void(connection::Type, std::uint32_t, Packet&)> onMessageReception_; /*!> The function to call when a message is received (to be defined by the user) */
     };
 }

@@ -1,4 +1,8 @@
+
+#include "../include/Data/Packet.hpp"
 #include "../include/Manager.hpp"
+#include "../shared/Message.hpp"
+#include "../shared/Player.hpp"
 
 #include <iostream>
 #include <csignal>
@@ -27,13 +31,24 @@ int main(void)
 
     // Set up callbacks for both connections
     client.callbacks().setOnConnection([&](std::uint32_t clientId) {
-        // Send a message to the server as plain text
-        client.sendMessage(glnet::connection::Type::TCP, "Hello!");
+        std::cout << "Client connected to server. " << std::endl;
 
-        // Alternatively, send a message to the server as a byte vector
-        client.sendMessage(glnet::connection::Type::TCP, {0, 0, 0, 0, 6, 'H', 'e', 'l', 'l', 'o', '!'});
+        // Send a position to the server
+        glnet::Packet positionPacket;
+        Player::Position position{10.05f, 20.02f, 5.0f};
 
-        std::cout << "Client connected to server. "<< std::endl;
+        positionPacket << glnet::message::Type::PLAYER_POSITION << position;
+        std::cout << positionPacket << std::endl;
+        client.sendToServer(glnet::connection::Type::UDP, positionPacket);
+
+        // Send a plain text message
+        glnet::Packet messagePacket;
+
+        messagePacket << glnet::message::Type::CHAT_MESSAGE << "Push the B site !";
+
+        std::cout << messagePacket << std::endl;
+        client.sendToServer(glnet::connection::Type::UDP, messagePacket);
+
     });
 
     client.connectToServer();

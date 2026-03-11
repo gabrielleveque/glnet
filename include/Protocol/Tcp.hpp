@@ -3,10 +3,11 @@
 
 #include "Enum/Connection.hpp"
 #include "Data/Endpoint.hpp"
-#include "Data/Message.hpp"
 #include "Data/Buffer.hpp"
+#include "Data/Packet.hpp"
 #include "Socket.hpp"
 
+#include <iostream>
 #include <cstdint>
 
 namespace glnet
@@ -41,13 +42,12 @@ namespace glnet
             void connectToServer(const std::string& host, std::uint16_t port);
 
             /**
-             * @brief Send a message to a given socket
+             * @brief Send a packet to a given socket
              *
-             * @param socket The socket to send the message
-             * @param id The id of the client (for disconnection purpose)
-             * @param msg The message to send
+             * @param socket The socket to send to
+             * @param packet The packet to send
              */
-            void sendToSocket(Socket& socket, Buffer& msg);
+            void sendToSocket(Socket& socket, Packet& packet);
 
         private:
             connection::Side side_; /*!> The side of the connection (client or server) */
@@ -70,19 +70,19 @@ namespace glnet
              * @brief Read the header of the segment issued to the server
              *
              * @param socket The socket to read on
-             * @param segment The segment to store the information in
+             * @param packet The packet to store the information in
              * @return std::size_t The number of bytes read
              */
-            std::size_t readHeader(Socket& socket, Segment& segment);
+            std::size_t readHeader(Socket& socket, Packet& packet);
 
             /**
              * @brief Read the body of the segment issued to the server
              *
              * @param socket The socket to read on
-             * @param segment The segment to store the information in
+             * @param packet The packet to store the information in
              * @return std::size_t The number of bytes read
              */
-            std::size_t readBody(Socket& socket, Segment& segment);
+            std::size_t readBody(Socket& socket, Packet& packet);
 
             /**
              * @brief Read from a given socket

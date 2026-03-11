@@ -135,22 +135,24 @@ std::int32_t glnet::Socket::poll(std::vector<PollFd>& fds, NFDS nfds, std::int32
     return polled;
 }
 
+#include <iostream>
+
 glnet::Socket::BytesSent glnet::Socket::send(const Buffer& buffer, BufferLength length, std::int32_t flags)
 {
     BytesSent bytesSent = 0;
 
-    bytesSent = ::send(fd_, (const char *) buffer.data(), length, flags);
+    bytesSent = ::send(fd_, buffer, length, flags);
     if (bytesSent == SOCKET_ERROR_CODE) {
         throw std::runtime_error(std::format("Send error on the socket: {}.", getLastError()));
     }
     return bytesSent;
 }
 
-glnet::Socket::BytesReceived glnet::Socket::recv(Buffer& buffer, BufferLength length, std::int32_t flags)
+glnet::Socket::BytesReceived glnet::Socket::recv(Buffer buffer, BufferLength length, std::int32_t flags)
 {
     BytesReceived bytesReceived = 0;
 
-    bytesReceived = ::recv(fd_, (char *) buffer.data(), length, flags);
+    bytesReceived = ::recv(fd_, buffer, length, flags);
     if (bytesReceived == SOCKET_ERROR_CODE) {
         throw std::runtime_error(std::format("Receive error on the socket: {}.", getLastError()));
     }
@@ -161,7 +163,7 @@ glnet::Socket::BytesReceived glnet::Socket::sendTo(const Buffer& buffer, BufferL
 {
     BytesSent bytesSent = 0;
 
-    bytesSent = ::sendto(fd_, (const char *) buffer.data(), length, flags, &destAddr, destAddrLen);
+    bytesSent = ::sendto(fd_, buffer, length, flags, &destAddr, destAddrLen);
     if (bytesSent == SOCKET_ERROR_CODE) {
         throw std::runtime_error(std::format("Send error to an endpoint: {}.", getLastError()));
     }
@@ -169,13 +171,13 @@ glnet::Socket::BytesReceived glnet::Socket::sendTo(const Buffer& buffer, BufferL
 }
 
 glnet::Socket::BytesReceived glnet::Socket::recvFrom(
-    Buffer& buffer, BufferLength length, std::int32_t flags, OptionalReference<Address> srcAddr, OptionalReference<AddressLength> srcAddrLen)
+    Buffer buffer, BufferLength length, std::int32_t flags, OptionalReference<Address> srcAddr, OptionalReference<AddressLength> srcAddrLen)
 {
     Address *addrPtr = srcAddr.has_value() ? &srcAddr->get() : nullptr;
     AddressLength *addrLenPtr = srcAddrLen.has_value() ? &srcAddrLen->get() : nullptr;
     BytesReceived bytesReceived = 0;
 
-    bytesReceived = ::recvfrom(fd_, (char *) buffer.data(), length, flags, addrPtr, addrLenPtr);
+    bytesReceived = ::recvfrom(fd_, buffer, length, flags, addrPtr, addrLenPtr);
     if (bytesReceived == SOCKET_ERROR_CODE) {
 
         throw std::runtime_error(std::format("Receive error from an endpoint: {}.", getLastError()));

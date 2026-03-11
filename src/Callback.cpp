@@ -25,14 +25,14 @@ void glnet::Callback::setOnDisconnection(std::function<void(std::uint32_t)> func
     onDisconnection_ = func;
 }
 
-void glnet::Callback::onMessageReception(connection::Type type, std::uint32_t clientId, Message& message)
+void glnet::Callback::onMessageReception(connection::Type type, std::uint32_t clientId, Packet& packet)
 {
     if (onMessageReception_) {
-        onMessageReception_(type, clientId, message);
+        onMessageReception_(type, clientId, packet);
     }
 }
 
-void glnet::Callback::setOnMessageReception(std::function<void(connection::Type, std::uint32_t, Message&)> func)
+void glnet::Callback::setOnMessageReception(std::function<void(connection::Type, std::uint32_t, Packet&)> func)
 {
     onMessageReception_ = func;
 }

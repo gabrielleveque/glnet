@@ -3,7 +3,6 @@
 
 #include "Enum/Connection.hpp"
 #include "Data/Endpoint.hpp"
-#include "Data/Message.hpp"
 #include "Data/Buffer.hpp"
 #include "Socket.hpp"
 
@@ -46,19 +45,19 @@ namespace glnet
              * @brief Send a message to a given socket
              *
              * @param endpoint The endpoint where to send the message
-             * @param msg The message to send
+             * @param packet The packet to send
              */
-            void sendToEndpoint(Endpoint endpoint, Buffer& msg);
+            void sendToEndpoint(Endpoint endpoint, Packet& packet);
 
         private:
             /**
              * @brief Read the header of the datagram issued to the server
              *
              * @param endpoint The endpoint to read from
-             * @param datagram The datagram to store the information in
+             * @param packet The packet to store the information in
              * @return std::size_t The number of bytes read
              */
-            std::size_t readDatagram(Socket::Address& addr, Socket::AddressLength& len, Datagram& datagram);
+            std::size_t readDatagram(Socket::Address& addr, Socket::AddressLength& len, Packet& packet);
 
             connection::Side side_; /*!> The side of the connection (client or server) */
             bool running_;                /*!> If the tcp instance should run */

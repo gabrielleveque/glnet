@@ -145,7 +145,7 @@ namespace glnet
             /**
              * @brief Buffer type
              */
-            using Buffer = std::vector<std::uint8_t>;
+            using Buffer = void *;
 
             /**
              * @brief Construct a new Socket object
@@ -249,7 +249,7 @@ namespace glnet
              * @param flags Flags for receiving the data
              * @return BytesReceived The number of bytes received, or -1 on error
              */
-            BytesReceived recv(Buffer& buffer, BufferLength length, std::int32_t flags);
+            BytesReceived recv(Buffer buffer, BufferLength length, std::int32_t flags);
 
             /**
              * @brief Sends data to a specific address (for UDP sockets)
@@ -274,7 +274,7 @@ namespace glnet
              * @return Engine::Network::Socket::BytesReceived The number of bytes received, or -1 on error
              */
             BytesReceived recvFrom(
-                Buffer& buffer, BufferLength length, std::int32_t flags, OptionalReference<Address> srcAddr = std::nullopt, OptionalReference<AddressLength> srcAddrLen = std::nullopt);
+                Buffer buffer, BufferLength length, std::int32_t flags, OptionalReference<Address> srcAddr = std::nullopt, OptionalReference<AddressLength> srcAddrLen = std::nullopt);
 
             /**
              * @brief Get the socket name (local address)

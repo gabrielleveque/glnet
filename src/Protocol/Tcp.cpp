@@ -120,28 +120,27 @@ void glnet::Tcp::disconnectSocket(std::size_t id)
     }
 }
 
-std::size_t glnet::Tcp::readHeader(Socket& socket, Segment& segment)
+std::size_t glnet::Tcp::readHeader(Socket& socket, Packet& packet)
 {
-    std::vector<std::uint8_t> buffer(5);
-    std::size_t bytesRead = socket.recv(buffer, 5, 0);
+    std::size_t bytesRead = socket.recv(&packet.length, sizeof(packet.length), 0);
 
-    if (bytesRead != 5) {
+    if (bytesRead != sizeof(packet.length)) {
         return 0;
     }
-    segment.opcode = buffer[0];
-    segment.length = utils::Converter::bytesToNumber(std::vector(buffer.begin() + 1, buffer.end()), 4);
     return bytesRead;
 }
 
-std::size_t glnet::Tcp::readBody(Socket& socket, Segment& segment)
+std::size_t glnet::Tcp::readBody(Socket& socket, Packet& packet)
 {
-    if (segment.length == 0) {
+    if (packet.length == 0) {
         return 0;
     }
-    segment.payload.resize(segment.length);
-    std::size_t bytesRead = socket.recv(segment.payload, segment.length, 0);
+    packet.bytes.resize(packet.length);
+    std::uint8_t* buffer = packet.bytes.data();
 
-    if (bytesRead != segment.length) {
+    std::size_t bytesRead = socket.recv(buffer, packet.length, 0);
+
+    if (bytesRead != packet.length) {
         return 0;
     }
     return bytesRead;
@@ -154,25 +153,29 @@ bool glnet::Tcp::readFromSocket(Socket& socket)
     }
     try {
         Manager& manager = Manager::getInstance();
-        Segment segment = {0};
+        Packet packet;
 
-        if (readHeader(socket, segment) == 0) {
+        if (readHeader(socket, packet) == 0) {
             return false;
         }
-        if (readBody(socket, segment) == 0 && segment.length != 0) {
+        if (readBody(socket, packet) == 0 && packet.length != 0) {
             return false;
         }
-        manager.callbackHandler(Callback::Type::ON_MESSAGE_RECEPTION, connection::Type::TCP, manager.getClientIdBy<Socket>(socket), segment);
+        manager.callbackHandler(Callback::Type::ON_MESSAGE_RECEPTION, connection::Type::TCP, manager.getClientIdBy<Socket>(socket), packet);
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
     }
     return true;
 }
 
-void glnet::Tcp::sendToSocket(Socket& socket, Buffer& msg)
+void glnet::Tcp::sendToSocket(Socket& socket, Packet& packet)
 {
     try {
-        socket.send(msg.data, msg.data.size(), 0);
+        std::uint8_t buffer[sizeof(packet.length) + packet.length];
+
+        std::memcpy(buffer, &packet.length, sizeof(packet.length));
+        std::memcpy(buffer + sizeof(packet.length), packet.bytes.data(), packet.length);
+        socket.send(buffer, sizeof(packet.length) + packet.length, 0);
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
     }
