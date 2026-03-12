@@ -46,7 +46,6 @@ std::size_t glnet::Udp::readDatagram(Socket::Address& addr, Socket::AddressLengt
     std::vector<std::uint8_t> buffer(1024);
     std::size_t bytesRead = socket_.recvFrom(buffer.data(), buffer.size(), 0, addr, len);
 
-    std::cout << "Received datagram with length " << bytesRead << std::endl;
     if (bytesRead < 5) {
         return 0;
     }
@@ -87,8 +86,6 @@ void glnet::Udp::sendToEndpoint(Endpoint endpoint, Packet& packet)
 
         std::memcpy(buffer, &packet.length, sizeof(packet.length));
         std::memcpy(buffer + sizeof(packet.length), packet.bytes.data(), packet.length);
-
-        std::cout << "Sending datagram with length " << sizeof(packet.length) + packet.length << std::endl;
 
         socket_.sendTo(buffer, sizeof(packet.length) + packet.length, 0, (const Socket::Address&) servAddr, sizeof(servAddr));
     } catch (const std::exception& e) {

@@ -212,7 +212,6 @@ void glnet::Manager::setServerEndpoint(Endpoint endpoint)
 std::uint16_t glnet::Manager::getAvailablePort()
 {
     Socket socket(connection::Type::TCP, {LOCALHOST, 0});
-    Endpoint endpoint = socket.getEndpoint();
     Socket::Address_in addr = {0};
     Socket::AddressLength addrLen = 0;
 
