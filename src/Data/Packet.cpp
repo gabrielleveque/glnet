@@ -1,6 +1,8 @@
 #include "Utils/Converter.hpp"
 #include "Data/Packet.hpp"
 
+#include <format>
+
 glnet::Packet::Packet() : length(0), writeOffset_(0), readOffset_(0)
 {
 }

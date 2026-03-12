@@ -5,7 +5,6 @@
 #include "Utils/Singleton.hpp"
 #include "Protocol/Tcp.hpp"
 #include "Protocol/Udp.hpp"
-#include "Data/Buffer.hpp"
 #include "Data/Packet.hpp"
 #include "Callback.hpp"
 

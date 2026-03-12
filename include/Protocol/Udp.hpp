@@ -3,7 +3,6 @@
 
 #include "Enum/Connection.hpp"
 #include "Data/Endpoint.hpp"
-#include "Data/Buffer.hpp"
 #include "Socket.hpp"
 
 #include <cstdint>
