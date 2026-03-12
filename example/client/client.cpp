@@ -38,17 +38,15 @@ int main(void)
         Player::Position position{10.05f, 20.02f, 5.0f};
 
         positionPacket << glnet::message::Type::PLAYER_POSITION << position;
-        std::cout << positionPacket << std::endl;
+        std::cout << "Sending player position to server: (" << position.x << ", " << position.y << ", " << position.z << ")" << std::endl;
         client.sendToServer(glnet::connection::Type::UDP, positionPacket);
 
         // Send a plain text message
         glnet::Packet messagePacket;
 
         messagePacket << glnet::message::Type::CHAT_MESSAGE << "Push the B site !";
-
-        std::cout << messagePacket << std::endl;
+        std::cout << "Sending chat message to server: " << "Push the B site !" << std::endl;
         client.sendToServer(glnet::connection::Type::UDP, messagePacket);
-
     });
 
     client.connectToServer();

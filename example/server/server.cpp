@@ -30,20 +30,14 @@ int main(void)
 
     // Set up callbacks for both connections and disconnections
     server.callbacks().setOnConnection([](std::uint32_t clientId) {
-        std::cout << "Client connected: " << clientId << std::endl;
+        std::cout << "Client connected with id " << clientId << std::endl;
     });
 
     server.callbacks().setOnDisconnection([](std::uint32_t clientId) {
-        std::cout << "Client disconnected: " << clientId << std::endl;
+        std::cout << "Client disconnected with id " << clientId << std::endl;
     });
 
     server.callbacks().setOnMessageReception([](glnet::connection::Type type, std::uint32_t clientId, glnet::Packet& packet) {
-        if (type == glnet::connection::Type::TCP) {
-            std::cout << "Received TCP message from client " << clientId << " with length " << packet.length << std::endl;
-        } else {
-            std::cout << "Received UDP message from client " << clientId << " with length " << packet.length << std::endl;
-        }
-
         glnet::message::Type packetType;
 
         packet >> packetType;
@@ -59,7 +53,6 @@ int main(void)
             packet >> message;
             std::cout << "Received chat message from client " << clientId << ": " << message << std::endl;
         }
-        std::cout << std::endl;
     });
 
     while (!sigintCatch) {
