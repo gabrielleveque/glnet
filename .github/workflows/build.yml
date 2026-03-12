@@ -1,5 +1,5 @@
 env:
-  EXECUTABLES: "rtype"
+  LIBRARY: "build/libglnet.a"
 
 on:
   pull_request:
@@ -27,6 +27,9 @@ jobs:
       timeout-minutes: 2
       run: cmake -B build/ -S .
 
-    - name: Build
+    - name: Build library
       timeout-minutes: 2
       run: cmake --build build/
+
+    - name: Check if library exists
+      run: if [ ! -e "${{ env.LIBRARY }}" ]; then exit 1; fi
